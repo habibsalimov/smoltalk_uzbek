@@ -73,8 +73,19 @@ def jsonl_to_markdown_table(input_file: str, output_file: str, max_rows: int = 5
     print(f"✅ Markdown tablosu oluşturuldu: {output_file}")
     print(f"   GitHub'da README olarak veya ayrı dosya olarak ekleyebilirsiniz")
 
+def truncate_text(text: str, max_length: int = 60) -> str:
+    """Metni kısalt ve temizle"""
+    # Yeni satırları kaldır
+    text = text.replace('\n', ' ').replace('\r', ' ')
+    # Birden fazla boşluğu tek boşluğa çevir
+    text = ' '.join(text.split())
+    # Kısalt
+    if len(text) > max_length:
+        return text[:max_length] + '...'
+    return text
+
 def create_summary_table(input_file: str, output_file: str):
-    """Özet tablo oluştur (daha kompakt)"""
+    """Özet tablo oluştur (daha kompakt ve okunaklı)"""
     
     print(f"\n📊 Özet tablo oluşturuluyor...")
     
@@ -87,7 +98,8 @@ def create_summary_table(input_file: str, output_file: str):
                 pass
     
     markdown = []
-    markdown.append("# SmolTalk Pilot Test - Özet Tablo\n\n")
+    markdown.append("# SmolTalk Pilot Test - Çeviri Örnekleri\n\n")
+    markdown.append("> **Not:** Metinler okunabilirlik için kısaltılmıştır. Tam içerik için `pilot_test_results.jsonl` veya `pilot_results.csv` dosyasına bakın.\n\n")
     
     # Özet istatistikler
     total_conversations = len(results)
@@ -115,10 +127,11 @@ def create_summary_table(input_file: str, output_file: str):
     markdown.append(f"| Toplam Süre | {total_time:.1f}s ({total_time/60:.1f} dk) |\n")
     markdown.append(f"| Ort. Süre/Çeviri | {total_time/max(total_translated, 1):.2f}s |\n\n")
     
-    # Örnek çeviriler
-    markdown.append("## 🔍 Örnek Çeviriler\n\n")
-    markdown.append("| # | Orijinal (EN) | Çeviri (UZ) | Süre |\n")
-    markdown.append("|---|---------------|-------------|------|\n")
+    # Örnek çeviriler - DAHA KISA VE OKUNAKLI
+    markdown.append("## 🔍 Başarılı Çeviri Örnekleri\n\n")
+    markdown.append("<details>\n<summary>📋 20 Örnek Çeviri (tıklayın)</summary>\n\n")
+    markdown.append("| # | İngilizce | Özbekçe | Süre |\n")
+    markdown.append("|--:|:----------|:--------|-----:|\n")
     
     example_count = 0
     for result in results:
@@ -126,13 +139,45 @@ def create_summary_table(input_file: str, output_file: str):
             break
         for msg in result.get('conversation', []):
             if 'translated' in msg and not msg.get('skipped'):
-                original = msg.get('original', '')[:100]
-                translated = msg.get('translated', '')[:100]
+                # Metinleri kısalt (50 karakter)
+                original = truncate_text(msg.get('original', ''), max_length=50)
+                translated = truncate_text(msg.get('translated', ''), max_length=50)
                 time_val = msg.get('translation_time', 0)
-                markdown.append(f"| {example_count + 1} | {original}... | {translated}... | {time_val:.2f}s |\n")
+                chars = msg.get('chars', 0)
+                
+                markdown.append(f"| {example_count + 1} | {original} | {translated} | {time_val:.1f}s |\n")
                 example_count += 1
                 if example_count >= 20:
                     break
+    
+    markdown.append("\n</details>\n\n")
+    
+    # Detaylı örnekler - Sadece 5 tane, daha fazla bilgi ile
+    markdown.append("## 📝 Detaylı Örnekler\n\n")
+    
+    detail_count = 0
+    for result in results:
+        if detail_count >= 5:
+            break
+        
+        conv = result.get('conversation', [])
+        for msg in conv:
+            if 'translated' in msg and not msg.get('skipped') and detail_count < 5:
+                original = msg.get('original', '')
+                translated = msg.get('translated', '')
+                time_val = msg.get('translation_time', 0)
+                chars = msg.get('chars', 0)
+                
+                markdown.append(f"### Örnek {detail_count + 1}\n\n")
+                markdown.append(f"**İngilizce:**\n> {original[:200]}{'...' if len(original) > 200 else ''}\n\n")
+                markdown.append(f"**Özbekçe:**\n> {translated[:200]}{'...' if len(translated) > 200 else ''}\n\n")
+                markdown.append(f"- ⏱️ Çeviri Süresi: {time_val:.2f}s\n")
+                markdown.append(f"- 📊 Karakter Sayısı: {chars}\n")
+                markdown.append(f"- 📈 Hız: {chars/max(time_val, 0.01):.0f} karakter/saniye\n\n")
+                markdown.append("---\n\n")
+                
+                detail_count += 1
+                break
     
     # Dosyaya yaz
     with open(output_file, 'w', encoding='utf-8') as f:
