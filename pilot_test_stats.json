@@ -1,0 +1,19 @@
+{
+  "total_samples": 100,
+  "total_messages": 342,
+  "translatable_messages": 146,
+  "skipped_messages": 196,
+  "skip_reasons": {
+    "assistant_message": 171,
+    "filtered": 25
+  },
+  "successful_translations": 146,
+  "failed_translations": 0,
+  "total_chars_original": 84438,
+  "total_chars_translated": 91695,
+  "total_time": 143.01938915252686,
+  "total_cost_usd": 1.68876,
+  "total_cost_try": 57.41784,
+  "avg_time_per_translation": 0.9795848572090881,
+  "avg_chars_per_message": 578.3424657534247
+}
